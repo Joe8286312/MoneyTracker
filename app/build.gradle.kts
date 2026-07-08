@@ -68,4 +68,9 @@ dependencies {
     implementation("androidx.room:room-ktx:$roomVersion")
     // 使用 KSP 处理 Room 的注解并生成底层实现代码
     ksp("androidx.room:room-compiler:$roomVersion")
+
+    // 👇 添加这两行：引入 Compose Material 图标库
+    implementation("androidx.compose.material:material-icons-core")
+    // extended 库包含了所有的 Material 官方图标（包括以后我们会用到的各种记账分类图标）
+    implementation("androidx.compose.material:material-icons-extended")
 }
