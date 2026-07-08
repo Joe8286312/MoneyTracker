@@ -33,6 +33,9 @@ import com.example.moneytracker.data.model.TransactionType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 @Composable
 fun HomeScreen(
@@ -46,10 +49,17 @@ fun HomeScreen(
     val currentMonthExpense by viewModel.currentMonthExpense.collectAsState()
     val recentTransactions by viewModel.recentTransactions.collectAsState()
 
+    // 👉 新增：用于控制底部面板显示/隐藏的状态
+    var showAddSheet by remember { mutableStateOf(false) }
+
     // Scaffold 是 Material Design 的标准页面结构脚手架，能极其方便地安放 FAB 悬浮按钮
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddTransactionClick) {
+            FloatingActionButton(onClick = {
+                // 👉 修改：不再向外传递点击事件，直接在这里改变状态，呼出面板
+                showAddSheet = true
+            }
+            ) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "添加账单")
             }
         }
@@ -99,6 +109,13 @@ fun HomeScreen(
                 }
             }
         }
+    }
+    // 👉 新增：当状态为 true 时，显示我们刚才写的底部面板
+    if (showAddSheet) {
+        AddTransactionSheet(
+            viewModel = viewModel,
+            onDismiss = { showAddSheet = false } // 传递关闭面板的回调
+        )
     }
 }
 

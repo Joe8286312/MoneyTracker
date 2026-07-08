@@ -3,48 +3,61 @@ package com.example.moneytracker.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.moneytracker.data.model.Account
+import com.example.moneytracker.data.model.Category
+import com.example.moneytracker.data.model.CategoryType
 import com.example.moneytracker.data.model.TransactionEntity
+import com.example.moneytracker.data.model.TransactionType
 import com.example.moneytracker.data.repository.MoneyRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class HomeViewModel(private val repository: MoneyRepository) : ViewModel() {
 
-    // stateIn 操作符的作用是将冷流 (Flow) 转化为热流 (StateFlow)。
-    // 它可以缓存最新的状态，这样当屏幕旋转导致 UI 重新绑定时，能立刻获取到最新数据。
-    // SharingStarted.WhileSubscribed(5000) 是一种优化机制，UI 不可见 5 秒后自动停止监听数据库，节省手机电量。
+    init {
+        // 初始化时，插入一些默认的账户和分类，防止后续插入账单时触发 SQLite 外键约束崩溃
+        viewModelScope.launch {
+            repository.initDefaultDataIfNeeded()
+        }
+    }
 
     val netWorth: StateFlow<Double> = repository.getNetWorth()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = 0.0
-        )
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val currentMonthExpense: StateFlow<Double> = repository.getCurrentMonthExpense()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = 0.0
-        )
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val currentMonthIncome: StateFlow<Double> = repository.getCurrentMonthIncome()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = 0.0
-        )
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val recentTransactions: StateFlow<List<TransactionEntity>> = repository.getAllTransactions()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // 暴露给底部的账户和分类列表，供记账页面选择
+    val accounts: StateFlow<List<Account>> = repository.getAllAccounts()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val categories: StateFlow<List<Category>> = repository.getAllCategories()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // 处理用户的记账请求
+    fun addTransaction(amount: Double, type: TransactionType, accountId: Int, categoryId: Int?, remark: String) {
+        viewModelScope.launch {
+            val transaction = TransactionEntity(
+                amount = amount,
+                type = type,
+                accountId = accountId,
+                categoryId = categoryId,
+                timestamp = System.currentTimeMillis(),
+                remark = remark.ifBlank { "日常记账" }
+            )
+            repository.insertTransaction(transaction)
+        }
+    }
 }
 
-// 工厂类：负责向 HomeViewModel 注入 MoneyRepository 实例
 class HomeViewModelFactory(private val repository: MoneyRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {

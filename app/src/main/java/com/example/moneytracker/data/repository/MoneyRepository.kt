@@ -3,6 +3,9 @@ package com.example.moneytracker.data.repository
 import com.example.moneytracker.data.dao.AccountDao
 import com.example.moneytracker.data.dao.CategoryDao
 import com.example.moneytracker.data.dao.TransactionDao
+import com.example.moneytracker.data.model.Account
+import com.example.moneytracker.data.model.Category
+import com.example.moneytracker.data.model.CategoryType
 import com.example.moneytracker.data.model.TransactionEntity
 import com.example.moneytracker.data.model.TransactionType
 import kotlinx.coroutines.flow.Flow
@@ -73,5 +76,26 @@ class MoneyRepository(
         val endOfMonth = calendar.timeInMillis
 
         return Pair(startOfMonth, endOfMonth)
+    }
+
+    // 获取所有账户和分类
+    fun getAllAccounts(): Flow<List<Account>> = accountDao.getAllAccounts()
+    fun getAllCategories(): Flow<List<Category>> = categoryDao.getAllCategories()
+
+    // 初始化默认数据（如果没有的话）
+    suspend fun initDefaultDataIfNeeded() {
+        // 这里只是为了防止崩溃的权宜之计，通常我们需要专门的 DAO 方法来检查数量，这里简化处理
+        try {
+            // 默认账户：包含日常资金和信用负债
+            accountDao.insert(Account(id = 1, name = "微信/支付宝", isLiability = false))
+            accountDao.insert(Account(id = 2, name = "信用卡/花呗", isLiability = true))
+
+            // 默认分类
+            categoryDao.insert(Category(id = 1, name = "餐饮美食", type = CategoryType.EXPENSE))
+            categoryDao.insert(Category(id = 2, name = "交通出行", type = CategoryType.EXPENSE))
+            categoryDao.insert(Category(id = 3, name = "工资收入", type = CategoryType.INCOME))
+        } catch (e: Exception) {
+            // 如果主键已存在会抛出异常，这里直接捕获忽略即可，说明已经初始化过了
+        }
     }
 }
