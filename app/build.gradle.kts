@@ -1,6 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+
+    // 1. 在 plugins 代码块的末尾添加 KSP 插件
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -37,6 +40,10 @@ android {
     }
 }
 
+ksp {
+    arg("room.generateKotlin", "true")
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
@@ -53,4 +60,12 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // 2. 在 dependencies 代码块末尾添加 Room 的依赖
+    val roomVersion = "2.7.0"
+    implementation("androidx.room:room-runtime:$roomVersion")
+    // Room 的 Kotlin 扩展和协程支持
+    implementation("androidx.room:room-ktx:$roomVersion")
+    // 使用 KSP 处理 Room 的注解并生成底层实现代码
+    ksp("androidx.room:room-compiler:$roomVersion")
 }
